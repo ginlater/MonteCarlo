@@ -58,6 +58,7 @@ class MonteCarlo:
         self.xmin = args[4]
         self.xmax = args[5]
         self.quantile_print = args[6]
+        self.t0 = args[7]
 
         # 存储统计量的值
         statistics = []
@@ -95,6 +96,12 @@ class MonteCarlo:
         plt.grid(True)
         # plt.show()
 
+        # 找到t=0时的CDF值
+        if not self.quantile_print:
+            p_at_t0 = np.interp(self.t0, statistics, p_values)
+            with open("./temp.txt", "a") as f:
+                f.write(str(p_at_t0) + " ")
+
         if self.save_flag:
             plt.savefig(self.save_path + "/normal/{}_{}.jpg".format(self.n, self.num_simulations)
                         if self.random_type == "normal" else self.save_path + "/index/{}_{}.jpg".format(self.n, self.num_simulations))
@@ -107,32 +114,66 @@ def main(monteCarlo, random_type):
     # random_type = "normal"
     x_axiv_edge = [0, 0.5] if random_type == "normal" else [0.8, 1.4]
 
-    n_list = [100, 500, 1000, 5000, 10000]
-    n_const = [100]
+    t0 = 0.25 if random_type == "normal" else 0.975
+    n_list = [100, 500, 1000, 5000, 8000]
+    n_const = [5000]
     n_infinity = 10000
-    num_simulations_list = [100, 500, 1000, 5000, 10000]
-    num_simulations_const = [100]
+    num_simulations_list = [100, 500, 1000, 5000, 8000]
+    num_simulations_const = [5000]
     num_simulations_infinity = 10000
 
     # 控制 n 不变， 讨论 num_simulations 对 结果的影响
-    for n in n_list:
+    # for n in n_list:
+    for n in range(500, 8001, 500):
         for num_simulations in num_simulations_const:
-            monteCarlo(n, num_simulations, random_type, n == n_list[-1], x_axiv_edge[0], x_axiv_edge[1], False)
+            monteCarlo(n, num_simulations, random_type, n == n_list[-1], x_axiv_edge[0], x_axiv_edge[1], False, t0)
 
     plt.close()
+    with open("./temp.txt", "a") as f:
+        f.write("\n")
 
     # 控制 num_simulations 不变， 讨论 n 对 结果的影响
     for n in n_const:
-        for num_simulations in num_simulations_list:
+        # for num_simulations in num_simulations_list:
+        for num_simulations in range(500, 8001, 500):
             monteCarlo(n, num_simulations, random_type, num_simulations == num_simulations_list[-1], x_axiv_edge[0],
-                       x_axiv_edge[1], False)
+                       x_axiv_edge[1], False, t0)
 
     plt.close()
+    with open("./temp.txt", "a") as f:
+        f.write("\n")
 
     print("n = {} ns = {} 时，曲线无限逼近真实值".format(n_infinity, num_simulations_infinity))
-    monteCarlo(n_infinity, num_simulations_infinity, random_type, True, x_axiv_edge[0], x_axiv_edge[1], True)
+    monteCarlo(n_infinity, num_simulations_infinity, random_type, True, x_axiv_edge[0], x_axiv_edge[1], True, t0)
 
     plt.close()
+    with open("./temp.txt", "a") as f:
+        f.write("\n")
+
+
+def error_rate():
+    import numpy as np
+
+    with open('./temp.txt') as f:
+        for line in f:
+            if len(line) < 2:
+                continue
+            nums = [float(x) for x in line.split()]
+            gt = nums[-1]
+            errors = []
+            for num in nums[:-1]:
+                try:
+                    error = abs(num - gt) / gt
+                except:
+                    error = 0
+                errors.append(error)
+
+            with open("./errors_rate.txt", 'a') as f:
+                for e in errors:
+                    f.write('%.2f%% ' % (e * 100))
+            with open("./errors_rate.txt", 'a') as f:
+                f.write("\n")
+
 
 
 if __name__ == "__main__":
@@ -141,4 +182,5 @@ if __name__ == "__main__":
         print("random_type = {}".format(random_type))
         main(monteCarlo, random_type)
         print("------------------------------------")
+    error_rate()
 
