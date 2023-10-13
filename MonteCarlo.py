@@ -115,6 +115,7 @@ def main(monteCarlo, random_type):
     x_axiv_edge = [0, 0.5] if random_type == "normal" else [0.8, 1.4]
 
     t0 = 0.25 if random_type == "normal" else 0.975
+    # t0 = 0.75 if random_type == "normal" else 1.025
     n_list = [100, 500, 1000, 5000, 8000]
     n_const = [5000]
     n_infinity = 10000
